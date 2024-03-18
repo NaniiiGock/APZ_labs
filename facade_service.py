@@ -2,6 +2,8 @@ import requests
 import uuid
 from flask import Flask, request
 app = Flask(__name__)
+from flask_cors import CORS
+CORS(app)
 
 logging_service_url = "http://localhost:5001"
 messages_service_url = "http://localhost:5002"

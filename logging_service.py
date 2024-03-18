@@ -1,6 +1,7 @@
 from flask import Flask, request
+from flask_cors import CORS
 app = Flask(__name__)
-
+CORS(app)
 messages = {}
 
 @app.route('/log', methods=['POST', 'GET'])
