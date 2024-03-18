@@ -52,4 +52,4 @@ curl -X GET http://localhost:5000/facade-service
 
 ## Console output:
 
-![cosole](APZ_labs/console_output.jpg)
+![console](console_output.jpg?raw=true "Title")
