@@ -13,7 +13,7 @@ def start_service(args, config, n):
     subprocess.run(f"python {service}_service.py {host} {port}", shell=True)
 
 if __name__ == "__main__":
-    parser = ArgumentParser(prog = 'start_service.py')
+    parser = ArgumentParser(prog='start_service.py')
     parser.add_argument("--facade", action="store_const", const=True)
     parser.add_argument("--logging", action="store_const", const=True)
     parser.add_argument("--message", action="store_const", const=True)
