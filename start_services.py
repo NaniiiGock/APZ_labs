@@ -20,4 +20,8 @@ if __name__ == "__main__":
     parser.add_argument("--number", "-n", type=int, required=False, default=0)
     args = parser.parse_args()
 
+    # Start Consul
+    subprocess.run("consul agent -dev", shell=True)
+
+    # Start the specified service
     start_service(args, config, args.number)

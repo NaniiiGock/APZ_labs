@@ -1,59 +1,14 @@
-# import uvicorn
-# import argparse
-# from fastapi import FastAPI
-# from pydantic import BaseModel
-# import hazelcast
-# import asyncio
-
-# class Message(BaseModel):
-#     message: str
-#     uuid: str
-
-# app = FastAPI()
-# client = hazelcast.HazelcastClient()
-# queue = client.get_queue("queue").blocking()
-# message_list = []
-
-# @app.get('/')
-# async def home():
-#     global message_list
-#     messages = message_list[:]
-#     message_list.clear()
-#     print("Getting messages...\n", messages)
-#     return {"messages": messages}
-
-# @app.post("/")
-# def post_msg(msg: Message):
-#     print(f"Message service received post request: {msg}")
-#     return "to be implemented"
-
-# async def put_to_queue():
-#     global message_list
-#     while True:
-#         item = queue.take()
-#         if item:
-#             message_list.append(item)
-#             print(f"Message service received from queue: {item}")
-
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser(prog='message_service.py')
-#     parser.add_argument('host', type=str)
-#     parser.add_argument('port', type=int)
-#     args = parser.parse_args()
-    
-#     loop = asyncio.get_event_loop()
-#     loop.create_task(put_to_queue())
-#     uvicorn.run(app, host=args.host, port=args.port)
-
-
 from quart import Quart, jsonify, request
 import hazelcast
 import argparse
 import asyncio
+import consul
+import json
 from asyncio import Queue
 
-messages = Queue()  
+messages = Queue()
 app = Quart(__name__)
+consul_client = consul.Consul()
 
 async def poll_queue(queue, messages):
     while True:
@@ -70,12 +25,28 @@ async def return_messages():
     print(f"Returning Messages: {messages_list}")
     return jsonify(messages=messages_list)
 
-async def main(host, port):
-    client = hazelcast.HazelcastClient()
-    queue = client.get_queue("queue").blocking()
+def register_service():
+    consul_client.agent.service.register(
+        "message-service",
+        service_id="message-service",
+        address="127.0.0.1",
+        port=8082,
+        tags=["message"]
+    )
 
+@app.before_serving
+async def startup():
+    global client, queue
+    register_service()
+    index, data = consul_client.kv.get('message_queue/config')
+    if data is None:
+        raise ValueError("Message queue config not found in Consul")
+    message_queue_config = json.loads(data['Value'])
+    client = hazelcast.HazelcastClient()  # Use message_queue_config if needed
+    queue = client.get_queue(message_queue_config['queue_name']).blocking()
     asyncio.create_task(poll_queue(queue, messages))
 
+async def main(host, port):
     await app.run_task(host=host, port=port)
 
 if __name__ == '__main__':
@@ -83,6 +54,4 @@ if __name__ == '__main__':
     parser.add_argument('host', type=str)
     parser.add_argument('port', type=int)
     args = parser.parse_args()
-
     asyncio.run(main(args.host, args.port))
-
