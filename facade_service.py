@@ -18,14 +18,13 @@ def home():
 
 @app.post("/")
 async def post_msg(msg: Request):
-    
     data = await msg.json()
-    data = {"message": data.get("message"), 
-            "uuid": str(uuid.uuid4())}
+    data = {"message": data.get("message"), "uuid": str(uuid.uuid4())}
     
     print(f"Posting {data['uuid']}: {data['message']}")
-    requests.post(random.choice(config['logging']), json.dumps(data))
-    requests.post(config['message'], json.dumps(data))
+    logging_response = requests.post(random.choice(config['logging']), json=data)
+    messaging_response = requests.post(config['message'], json=data)
+    return {"logging_response": logging_response.text, "messaging_response": messaging_response.text}
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog = 'facade_service.py')
@@ -33,7 +32,4 @@ if __name__ == "__main__":
     parser.add_argument('port', type=int)
     args = parser.parse_args()
     print("Running facade...")
-    uvicorn.run("facade_service:app", 
-                host=args.host, 
-                port=args.port, 
-                reload=False)
+    uvicorn.run("facade_service:app", host=args.host, port=args.port, reload=False)

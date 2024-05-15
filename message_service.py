@@ -16,17 +16,14 @@ def home():
 
 @app.post("/")
 def post_msg(msg: Message):
-    return "Not implemented"
+    print(f"Received message {msg.uuid}: {msg.message}")
+    return "Message received"
 
 if __name__ == "__main__":
-    
     parser = argparse.ArgumentParser(prog = 'message_service.py')
-    parser.add_argument('host', type=str) 
+    parser.add_argument('host', type=str)
     parser.add_argument('port', type=int)
     args = parser.parse_args()
     
     print("Running message service...")
-    uvicorn.run("message_service:app", 
-                host=args.host, 
-                port=args.port, 
-                reload=False)
+    uvicorn.run("message_service:app", host=args.host, port=args.port, reload=False)
