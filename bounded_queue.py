@@ -2,45 +2,40 @@ import hazelcast
 import threading
 
 
+def read_from_queue(num=None):
+    client = hazelcast.HazelcastClient(cluster_name="dev")
+    
+    flag = False
+    if num is not None:
+        flag = True
+        
+    if flag:
+        queue = client.get_queue("bounded-queue").blocking()
+        num_empty = 0
+    else:
+        queue = client.get_queue("bounded-queue")
+    
+    num_empty = 0
+    while True:
+        future = queue.poll()
+        if future is not None:
+            print(f"Reading on {num}: {future}") if flag else print("Reading:", future.result())
+            num_empty = 0
+        else:
+            print("Empty Queue on ", num) if flag else print("Empty Queue")
+            num_empty += 1
+            break
+    client.shutdown()
+
 def write_to_queue():
     client = hazelcast.HazelcastClient(cluster_name="dev")
     queue = client.get_queue("bounded-queue").blocking()
     print("Writing...")
     for i in range(1, 101):
         queue.put(i)
-        print("Wrote:", i)
-    print("Writing finished")
+        print("put:", i)
     client.shutdown()
-
-def read_from_queue(num=None):
-    client = hazelcast.HazelcastClient(cluster_name="dev")
-    if num is None:
-        queue = client.get_queue("bounded-queue")
-        while True:
-            future = queue.poll()
-            if future is not None:
-                value = future.result() 
-                print("Reading:", value)
-            else:
-                print("Empty Queue")
-                break
-    else:
-        queue = client.get_queue("bounded-queue").blocking()
-        num_empty = 0
-        while True:
-            future = queue.poll()
-            if future is not None:
-                print(f"Reading on {num}: {future}")
-                num_empty = 0
-            else:
-                num_empty += 1
-            if num_empty > 10:
-                print("Empty Queue on ", num)
-                break
-            
-    client.shutdown()
-
-
+    
 if __name__ == "__main__":
     thread_writing = threading.Thread(target=write_to_queue)
     thread_writing.start()
